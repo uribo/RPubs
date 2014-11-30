@@ -12,7 +12,7 @@ output:
 library(stringr)
 ```
 
-<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014](http://qiita.com/uri/items/ce711ee6da76a1e11ca5)」の一部です</mark>
 
 # stringr: Make it easier to work with strings
 
