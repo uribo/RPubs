@@ -1,0 +1,110 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "このパッケージがすごい2014: magrittr"
+    theme: Flatly
+    highlight: GitHub
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+
+
+```{r using.package, message=FALSE}
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+```
+
+# magrittr: a forward-pipe operator for R
+
+**パイプ pipe: %>%**と呼ばれる演算子を利用できるようになります。データフレーム処理に特化した`dplyrパッケージ`と相性が良いです。。パイプを使うことで、左辺の値を右辺の引数として渡すことができ、ファイルの読み込み、subset関数によるデータ抽出、変形、出力など複数の処理を簡潔に、なおかつ一挙に扱うことができます。
+
+Rでは`subset(data.frame(x = 1, y = 1:10), y > 5)`という風にネスト構造を扱うことができますが、可読性が低下するのであまりよろしくない感じです。パイプ演算子を使うことで、連続した処理をつなげて表現することができます（パイプライン処理）。さきの例をパイプを使って表現すると以下のように。
+
+```{r demo.magrittr, message=FALSE}
+data.frame(
+  x = 1, y = 1:10) %>% # x, y列からなるデータフレームを作成
+  subset(y >= 5) # y が5以上のものを抽出
+```
+
+## 機能
+
+```{r, eval=FALSE}
+x %>% f # というのは f(x)と同等の評価
+x %>% f(y) # ... f(x, y)
+x %>% f %>% g %>% h # h(g(f(x)))
+```
+
+```{r, eval=FALSE}
+x %>% f(y, z = .) # .を使うことでz引数にxが代入される
+x %>% f(y = nrow(.), z = ncol(.)) # .にはxが代入される
+```
+
+### Tee演算子
+
+パイプライン処理の途中で結果を出力（plot）し、値等を表示したいときには`Tee演算子: %T>%`が便利。イマイチ理解できていないので公式のサンプル↓
+
+```{r}
+rnorm(200) %>%
+  matrix(ncol = 2) %T>%
+  plot %>%
+  colSums
+```
+
+### Dollar演算子
+
+データフレーム内の変数にアクセスするときには`Dollar演算子: %$%`が便利。
+
+```{r}
+iris %$%
+  ggplot(data = .,
+         aes(x = Sepal.Length, y = Sepal.Width, colour = Species)) + geom_point()
+```
+
+
+### %<>%
+
+算術計算などの処理を行い、値を上書きするときには`%<>%`が有効。
+
+```{r}
+mean(iris$Sepal.Length)
+iris$Sepal.Length %<>% sqrt
+mean(iris$Sepal.Length)
+```
+
+### さらに詳しく知りたい人は
+
+```{r, eval=FALSE}
+vignette("magrittr")
+```
+
+（投げやり）
+
+### おまけ
+
+スクリプトのパイプごとに音を鳴らしてくれる楽しいパッケージ（@dichikaさん作）もあります。
+
+-> [https://github.com/dichika/pings](https://github.com/dichika/pings)
+
+
+## 対抗馬 %>>% pipeR
+
+`magrittrパッケージ`同様に、パイプ演算子を扱うパッケージとして`pipeR`がありますが、こちらはまだ利用していません。悪しからず。国内のR-userたちはこちらの`pipeR`をおすすめしている人が多いですね。紹介記事なども`pipeR`のものが多い。pipeR三銃士というかっちょい人たちもいます。
+
+## 参考
+
+* [smbache/magrittr](https://github.com/smbache/magrittr)
+* [CRAN - Package magrittr](http://cran.r-project.org/web/packages/magrittr/index.html)
+* [副作用を許しながらもchainしていく - 東京で尻を洗う](http://d.hatena.ne.jp/dichika/20140731/p1)
+* [magrittrがいい感じ - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20140403/1396529027)
+* [Simpler R coding with pipes > the present and future of the magrittr package | R-statistics blog](http://www.r-statistics.com/2014/08/simpler-r-coding-with-pipes-the-present-and-future-of-the-magrittr-package/)
+* [Timely Portfolio: Alternate Price Plots | ggplot2 + magrittr](http://timelyportfolio.blogspot.jp/2014/07/alternate-price-plots-ggplot2-magrittr.html)
+
+### pipeRに関して...
+
+* [おやすみ蓮君、さよなら可読性 - 東京で尻を洗う](http://d.hatena.ne.jp/dichika/20140905/p1)
+* [混迷をきわめるpipe界隈 - 東京で尻を洗う](http://d.hatena.ne.jp/dichika/20140818/p1)
+* [pipeR の使い方【ノーカット版】](http://www.slideshare.net/hoxo_m/piper-39401125)
+* [【超訳】pipeR の使い方 #rstatsj - Qiita](http://qiita.com/hoxo_m/items/b80778d46684b818abd2)

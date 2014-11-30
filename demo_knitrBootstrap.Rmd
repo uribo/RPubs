@@ -1,0 +1,46 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "このパッケージがすごい2014: knitrBootstrap"
+    theme: Flatly
+    highlight: GitHub
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+
+# knitrBootstrap: Knitr Bootstrap framework
+
+このパッケージを使用するとRmarkdownで使われている[knitr]()の表示形式を有名なCSSフレームワークである[Bootstrap]()を使って表現することができます。このページもknitrBootstrapを使って作成しています。左下のBootstrap theme、Code highlightingから、テーマとテキストハイライトの表示を変更できます。
+
+通常のknitrでのレンダリングだと見た目がシンプルであれな感じだな、という人向け。
+
+## 機能
+
+（GitHubリポジトリに書かれている項目）
+
+* 見出し（H1-H4）を自動的に識別し、目次を生成する
+* 画像は中央に配置され、サムネイル画像を拡大することができる
+* [bootswatch](http://bootswatch.com)にあるテーマを選択・変更することが可能
+* コードブロックは自動的にシンタックスハイライトされ、こちらのテーマも変更できる
+    * R以外のプログラミング言語にも対応
+* オンライン上で[mathjax](http://mathjax.org/)による数式の表記が可能
+
+## デモ
+
+```{r}
+library(ggplot2)
+ggplot(data = iris,
+       aes(x = Sepal.Width, y = Sepal.Length,
+           color = Species)) +
+  geom_point()
+```
+
+## 参考
+
+* [Knitrbootstrap by jimhester](http://jimhester.github.io/knitrBootstrap/)
+* [jimhester/knitrBootstrap](https://github.com/jimhester/knitrBootstrap)
+* [RPubs - RPubsを彩り豊かにする](http://rpubs.com/dichika/knitrbootstrap)
+* [CRAN - Package knitrBootstrap](http://cran.r-project.org/web/packages/knitrBootstrap/index.html)
+* [knitrBootstrapパッケージを使ってデコったhtmlファイルをRPubsにアップしたい - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20141108/1415406127)

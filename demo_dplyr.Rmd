@@ -1,0 +1,45 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "このパッケージがすごい2014: dplyr"
+    theme: Flatly
+    highlight: GitHub
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+```{r using.package, message=FALSE}
+library(dplyr)
+```
+
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+
+# dplyr: A Grammar of Data Manipulation
+
+創造神・羽鳥氏が作りしパッケージ。データフレームの操作に特化したplyrパッケージという感じです。このパッケージを利用するようになって、データ解析作業がかなり捗りました :)
+
+ここでは、irisデータを例にして、データ解析で頻繁に行う操作に使える数を紹介します。
+
+## データの整理
+
+```{r demo.dplyr}
+iris %>%
+  select(contains("Sepal")) %>%
+  filter(Sepal.Length >= 5, Sepal.Width <= 2.6) %>%
+  head()
+```
+
+## データの集約
+
+```{r demo.dplyr2}
+iris %>%
+  group_by(Species) %>%
+    summarise_each(funs(mean), Sepal.Length, Sepal.Width)
+```
+
+## 参考
+
+* [hadley/dplyr](https://github.com/hadley/dplyr)
+* [CRAN - Package dplyr](http://cran.r-project.org/web/packages/dplyr/index.html)
+* [Introduction to dplyr](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html)
+* Data manipulation with dplyr

@@ -1,0 +1,147 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "このパッケージがすごい2014: ggplot2"
+    theme: Flatly
+    highlight: GitHub
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+```{r using.package, message=FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+
+# ggplot2: An implementation of the Grammar of Graphics
+
+`ggplot2パッケージ`はRのグラフィックスに特化したパッケージです。開発者は「神」こと[Hadley Wickham](http://had.co.nz)さんです。
+
+Rユーザーの中では、グラフィックスに`latticeパッケージ`を利用するか`ggplot2`を利用するかという論争があったりなかったり。どちらも一長一短、覚えるのに少し手間がかかりますが、今年一年（実際にはここ数ヶ月）ggplot2と向き合った結果、`ggplot2` > `lattice`という形になりました（**宗教上の理由**でもある）。
+
+今年5月にはバージョン0.9から1.0になりました。バンザイ
+
+## ggplot2の概念
+
+ggplot2は「The Grammar of Graphics」という本の概念に基づきます。**グラフィックスの文法**と呼ばれる表記方法を用いることにより、より読みやすい・見栄えの良いグラフを作成します。
+
+`ggplot2パッケージ`内のグラフィックス描画関数は`qplot関数`と`ggplot関数`があります。`qplot`は*Quick plot*という説明文とおり、データをすばやく描画するのに向いています。なおかつ、Rの標準描画関数`plot`に近い処理ができるので直感的に理解しやすいです。対して`ggplot`はggplot2のメイン関数であり、他の関数と組み合わせることで複雑で協力なな描画が可能になります。
+
+ggplot2ではこの２つの描画関数がプロットオブジェクトとして扱われるため、再帰的に呼び出すことが可能です。また、一度作成したプロットオブジェクトにグラフィックスパラメータを付け加えていくことが基本となります。
+
+以下にirisデータを使った例を示します。
+
+```{r}
+data(iris)
+head(iris)
+summary(iris)
+```
+
+### qplot
+
+```{r}
+iris.plot <- qplot(x= Sepal.Width, y = Sepal.Length,
+      data = iris,
+      color = Species)
+iris.plot
+```
+
+ggplot2ではプロットする際に使用するデータを`data引数`により明示的に示します（**どのように示すかではなく、何を示したいか**、という考えがggplot2では大事）。
+
+上の例ではiris.plotというプロットオブジェクトに代入しましたが、一度作成したプロットオブジェクトをもとに拡張してみましょう。種ごとに別々に示す例です（ファセット）。
+
+```{r}
+iris.plot + facet_wrap(~ Species)
+```
+
+上の図では、`color引数`でirisデータのSpeciesごとに色を変更するようにしました。では次にプロットの大きさと形を変更します。
+
+```{r}
+qplot(x = Sepal.Width, y = Sepal.Length,
+      color = Species,
+      size = 2,
+      shape = Species,
+      data = iris)
+```
+
+プロットの大きさを変更する引数は`size`、形の変更は`shape`引数で行います。色と形の変更は、カテゴリー変数であれば自動的に行ってくれます。
+
+ここまでは散布図の例でしたが、散布図以外のプロットを行いたい場合には`geom引数`で表示形式を変更できます。箱ひげ図で種ごとの萼片長さを出力します。
+
+```{r}
+qplot(x = Species, y = Sepal.Length,
+      data = iris,
+      geom = "boxplot")
+```
+
+### ggplot
+
+qplot以上に複雑で柔軟性のある描画を可能にするのが`ggplot関数`です。`ggplot関数`はグラフ描画の過程をいくつかの部品として分割し、レイヤー（部品）を重ねることで目的のプロットを行います。
+
+```{r, eval=FALSE}
+ggplot(
+  mapping = aes(
+    x = Sepal.Width, y = Sepal.Length, color = Species),
+  data = iris)
+```
+
+`ggplot関数`では、`qplot関数`のようにデータとグラフに示す変数を指定しただけではプロットできません。まずは`geom_`ではじまるレイヤー関数を指定し、プロットの形を決定します。ここでは上の例と同じく、散布図を作成します。
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = Sepal.Width, y = Sepal.Length, color = Species),
+  data = iris) +
+  geom_point()
+```
+
+`geom_point`のほかに、`geom_bar`、`geom_boxplot`などがあります。
+
+### 幾何関数の追加
+
+つぎはプロットにy = ax + bの回帰直線を加えてみます。`ggplot関数`もプロットオブジェクトとして扱われるので、一度iris.plotというオブジェクトとして保存します。
+
+```{r}
+filter(iris, Species == "setosa")  %>% 
+  ggplot(
+    mapping = aes(
+      x = Sepal.Width, y = Sepal.Length),
+    data = .) -> iris.plot
+```
+
+```{r}
+iris.plot + geom_point() + geom_smooth(method = lm, se = F)
+```
+
+### 背景の変更: theme
+
+ggplot2では`theme関数`によりプロットの際のテーマがいくつか用意されています。初期設定では灰色の地なので少し変更してみます。
+
+```{r}
+ggplot(data = iris,
+      aes(x= Sepal.Width, y = Sepal.Length, color = Species)) +
+  geom_point() + 
+  theme_classic() +
+  theme_bw(base_size = 12)
+```
+
+[ggthemr](https://github.com/cttobin/ggthemr)パッケージはggplot2のテーマを拡張するためのパッケージです
+
+## 参考
+
+* [ggplot2](http://ggplot2.org/)
+* [ggplot2](http://ggplot2.org/book/)
+* [hadley/ggplot2](https://github.com/hadley/ggplot2)
+* [CRAN - Package ggplot2](http://cran.r-project.org/web/packages/ggplot2/index.html)
+* [Data visualisation with ggplot2](http://courses.had.co.nz/09-ismi/)
+* ggplot2: Elegant Graphics for Data Analysis. 2010. Hadley Wickham著. Springer
+* R Graphics Cookbook. 2012. Winston Chang著. オライリー
+* Rクイックリファレンス. 2014. Joseph Adler著、大橋 真也、木下 哲也訳. オライリー・ジャパン
+* [Rのグラフィック作成パッケージ“ggplot2”について｜Colorless Green Ideas](http://id.fnshr.info/2011/10/22/ggplot2/)
+* [ggplot2 の自分用メモ集を作ろう - Triad sou.](http://d.hatena.ne.jp/triadsou/20100528/1275042816)
+* [RPubs - ggplot2でグラフを部品から組み上げる](http://rpubs.com/kaz_yos/ggplot2-layers-j)
+* [ggplot2](https://oku.edu.mie-u.ac.jp/~okumura/stat/ggplot2.html)
+* [Rのggplot2のスニペット（主に自分用） - About connecting the dots.](http://smrmkt.hatenablog.jp/entry/2013/03/16/170914)

@@ -1,0 +1,93 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    title: "このパッケージがすごい2014: stringr"
+    theme: Flatly
+    highlight: GitHub
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+```{r using.package, message=FALSE}
+library(stringr)
+```
+
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+
+# stringr: Make it easier to work with strings
+
+Rでは文字列操作を扱う関数がいくつかありますが、知識がないと複雑でわかりにくいです。そんな文字列操作を、統一的な表現により簡単に扱えるようにしたパッケージが`stringr`です。
+
+`strinrパッケージ`の引数は基本的に*string*と*pattern*を指定します。patternには正規表現を用いることが可能です。
+
+## 簡単な文字列操作
+
+### 複数の文字列を結合して１つの文字列にする
+
+`paste関数`と似ていますが、文字と文字の間は空白でつながらないのが特徴です
+
+```{r}
+str_c("ABC", "456", "ghi")
+paste("ABC", "456", "ghi")
+```
+
+### 文字列の長さを返す
+
+```{r}
+str_length("ABC")
+```
+
+### 文字列からその一部を抽出
+
+```{r}
+hw <- "Hello World!"
+str_sub(hw, start = 3, end = 5)
+str_sub(hw, start = -6)
+```
+
+### 文字列を反復させる
+
+```{r}
+str_dup(hw, times = 2)
+```
+
+## パターンマッチ
+
+### パターンと適合するかどうかを判定
+
+```{r}
+message <- c("Hello :)", "Goodbye x(")
+str_detect(message, ":)")
+```
+
+マッチする場合には*TRUE*を返します
+
+### パターンとマッチする箇所を返す
+
+```{r}
+str_locate(message, "o")
+```
+
+### パターンにマッチしない部分を取り除く
+
+```{r}
+shopping_list <- c("apples x4", "flour", "sugar", "milk x2")
+str_extract(shopping_list, "[a-z]+")
+```
+
+### パターンにマッチした部分を置換する
+
+```{r}
+str_replace(message, "[[:punct:]]", "!") # 置換されるのは文字列の最初のみ
+str_replace_all(message, "[[:punct:]]", "!") # 文字列内で条件に合う部分をすべて置換
+```
+
+2015年は正規表現をきちんと勉強したいですね...
+
+## 参考
+
+* [hadley/stringr](https://github.com/hadley/stringr)
+* [CRAN - Package stringr](http://cran.r-project.org/web/packages/stringr/index.html)
+* [stringr — Rの文字列をまともな方法で処理する — Watallica metallicus](http://meme.biology.tohoku.ac.jp/students/iwasaki/rstats/stringr.html)
+* [R における正規表現 - RjpWiki](http://www.okada.jp.org/RWiki/?R%20%A4%CB%A4%AA%A4%B1%A4%EB%C0%B5%B5%AC%C9%BD%B8%BD)
+* [忘れっぽい人のための正規表現チートシート - Qiita](http://qiita.com/tossh0095/items/635aea9a529b9deb3038?utm_source=stock_summary_mail&utm_medium=email&utm_term=uri&utm_content=%E5%BF%98%E3%82%8C%E3%81%A3%E3%81%BD%E3%81%84%E4%BA%BA%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E6%AD%A3%E8%A6%8F%E8%A1%A8%E7%8F%BE%E3%83%81%E3%83%BC%E3%83%88%E3%82%B7%E3%83%BC%E3%83%88&utm_campaign=stock_summary_mail_2014-08-23)
