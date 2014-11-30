@@ -12,7 +12,7 @@ output:
 library(dplyr)
 ```
 
-<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014]()」の一部です</mark>
+<mark>この記事は[R Advent Calender 2014@Qiita](http://qiita.com/advent-calendar/2014/r-rstudio)１日目の記事「[このパッケージがすごい2014](http://qiita.com/uri/items/ce711ee6da76a1e11ca5)」の一部です</mark>
 
 # dplyr: A Grammar of Data Manipulation
 
@@ -26,6 +26,9 @@ library(dplyr)
 iris %>%
   select(contains("Sepal")) %>%
   filter(Sepal.Length >= 5, Sepal.Width <= 2.6) %>%
+  rename(sepal.length = Sepal.Length) %>%
+  mutate(sepal.length = round(sepal.length, 0)) %>%
+  arrange(Sepal.Width) %>%
   head()
 ```
 
@@ -34,7 +37,32 @@ iris %>%
 ```{r demo.dplyr2}
 iris %>%
   group_by(Species) %>%
-    summarise_each(funs(mean), Sepal.Length, Sepal.Width)
+    summarise_each(
+      funs(mean), Sepal.Length, Sepal.Width)
+```
+
+## データの結合
+
+`merge関数`よりも柔軟なデータフレームの結合が行えます。`by引数`で結合に用いる変数を指定できます。
+
+```{r}
+df1 <- data.frame(
+  Fruit = c("Apple", "Banana", "Melon"),
+  Price = c(100, 80, 360),
+  Count = c(3, 1, 1))
+df1
+
+df2 <- data.frame(
+  Fruit = c("Apple", "Pear", "Pine"),
+  Size = c("L", "M", "S"))
+df2
+```
+
+```{r}
+inner_join(df1, df2) # ２つのデータフレームに共通する項目をもとに結合
+left_join(df1, df2)  # ２つのデータフレームを結合。欠損値はNAとして扱われる
+semi_join(df1, df2)  # ２つのデータフレームに共通する変数のみ結合
+anti_join(df1, df2)  # 結合できない値を返す
 ```
 
 ## 参考
@@ -42,4 +70,9 @@ iris %>%
 * [hadley/dplyr](https://github.com/hadley/dplyr)
 * [CRAN - Package dplyr](http://cran.r-project.org/web/packages/dplyr/index.html)
 * [Introduction to dplyr](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html)
-* Data manipulation with dplyr
+* [dplyrでデータ処理](http://www.pu-hiroshima.ac.jp/~ttetsuji/R/%5b64%5ddplyr.html)
+*[dplyr最強伝説 - 東京で尻を洗う](http://d.hatena.ne.jp/dichika/20140103/p1)
+* [RPubs - dplyr入門](http://rpubs.com/dichika/dplyr_intro)
+* [Rのdplyrが便利ですねって話。 | 分析のおはなし。](http://www.housecat442.com/?p=346)
+* [Rのdplyrがもっと便利ですねって話。 | 分析のおはなし。](http://www.housecat442.com/?p=350)
+* [dplyrのなんたら_eachを効率的に使う - 東京で尻を洗う](http://d.hatena.ne.jp/dichika/20141027/p1)
