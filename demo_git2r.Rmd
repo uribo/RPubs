@@ -1,0 +1,152 @@
+---
+title: "git2rパッケージで始めるRプロジェクトのバージョン管理: リポジトリの作成から一連の流れ"
+author: "Shinya Uryu"
+date: "2015年1月4日"
+output: html_document
+---
+
+```{r, eval = TRUE, echo = FALSE}
+opts_chunk$set(
+  chace      = FALSE,
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  tidy       = FALSE,
+  fig.path   = "Figure/",
+  fig.width  = 8, 
+  fig.height = 8,
+  fig.retina = 1,
+  eval       = FALSE,
+  dpi        = 150)
+```
+
+
+```{r using_pkg}
+library(git2r)
+```
+
+# リポジトリの作成と設定 git init, config
+
+RStudioのメニューから、新規パッケージプロジェクト作成（git2rパッケージにもリポジトリを作成する`init関数`があるが、今回はパッケージなので説明しない）。gitオプションにチェックをつけたので、すでにgitリポジトリとして作成されている。
+
+```{r}
+repo <- repository("../designer/") # なにはなくともrepository関数でリポジトリのパスを渡しておく
+```
+
+```{r check_initial_files}
+# .git, .gigignoreがあることを確認する
+list.files(all.files = T)
+#  [1] "."              ".."            
+#  [3] ".git"           ".gitignore"    
+#  [5] ".Rbuildignore"  ".Rproj.user"   
+#  [7] "DESCRIPTION"    "designer.Rproj"
+#  [9] "man"            "NAMESPACE"     
+# [11] "R"              "Read-and-delete-me"
+```
+
+次に、Gitリポジトリの設定を確認する
+
+`~/.gitconfig`があればそちらの設定が読み込まれるが、このリポジトリにのみ反映させる`.gitconfig`を作成することもできる。
+
+```{r git_config}
+config(repo)
+# global:
+#         color.ui=true
+#         core.editer=emacs
+#         core.editor=emacs
+#         core.excludefiles=/Usrs/uri/.gitignore
+# ... 以下略
+```
+
+特に変更する必要はないのでそのままの設定で進める。
+
+# 管理対象状況の確認 git status
+
+```{r git_status}
+status(repo) # git status
+# Untracked files:
+#   Untracked:   .Rbuildignore
+#   Untracked:   .gitignore
+#   Untracked:   DESCRIPTION
+#   Untracked:   NAMESPACE
+#   Untracked:   R/
+#   Untracked:   Read-and-delete-me
+#   Untracked:   designer.Rproj
+#   Untracked:   man/
+```
+
+まだなにもしていないので、すべてのファイルがGitの**管理対象となっていない（Untracked）状態**
+
+# ファイルをインデックスに登録 git add
+
+不要なファイルを削除する
+
+```{r, eval = FALSE}
+file.remove("Read-and-delete-me")
+# [1] TRUE
+```
+
+残りのファイルをGitの管理対象とするが、その前に`DESCRIPTION`ファイルの中身を編集しておく...
+
+git2rパッケージでは`git add`コマンドは`add関数`で実行する
+
+```{r git_add}
+add(repo, "DESCRIPTION")
+```
+
+確認のために再度`status関数`で管理状況の確認を行うと...
+
+```{r confirm_status}
+status(repo)
+# Untracked files:
+#   Untracked:   .Rbuildignore
+# 	Untracked:   .gitignore
+# 	Untracked:   NAMESPACE
+# 	Untracked:   R/
+# 	Untracked:   designer.Rproj
+# 	Untracked:   man/
+# 
+# Staged changes:
+# 	New:   DESCRIPTION
+```
+
+`DESCRIPTION`がインデックスに登録されたことがわかる。
+というわけで、他のファイルもGit管理下におくことにする。
+
+```{r git_add_all}
+add(repo, c("NAMESPACE", "R/", "designer.Rproj", "man/"))
+```
+
+（すべてのファイルをインデックスに登録する`git add -all`コマンドのような機能はないのだろうか？）
+
+おっと。不可視ファイルの登録も忘れずに。
+
+```{r git_add_ignore}
+add(repo, c(".gitignore", ".Rbuildignore"))
+
+status(repo)
+# Staged changes:
+#   New:   .Rbuildignore
+# 	New:   .gitignore
+# 	New:   DESCRIPTION
+# 	New:   NAMESPACE
+# 	New:   R/designer.R
+# 	New:   designer.Rproj
+# 	New:   man/designer-package.Rd
+```
+
+これでフォルダ内のすべてのファイルがGitの管理対象となるようになった。しかし、これだけではバージョンが完了したわけではない。
+
+# ファイルの状態をローカルリポジトリにコミットする git commit
+
+これまでの段階では、ワーキングツリーからインデックスに登録されるようになっただけで、実際のローカルリポジトリにはその状態が記録されていない。ファイルの変更を記録するためには`git commit`コマンドがあり、`git2r`では`commit関数`によりコミットを行う。
+
+リポジトリ作成から最初のコミットなので、個々のファイルの変更点はすべて "[add]initial commit"で統一することにする。
+
+```{r git_commit}
+commit(repo, "[add]initial commit")
+# [d09210a] 2015-01-04: [add]initial commit
+```
+
+というわけで一通り、リポジトリの作成からファイルのコミットまでを行った。Gitには他にも、コミットの履歴を表示する`log`や差分を示す`diff`コマンドがあるが、続きはまだ今度。
+
