@@ -28,8 +28,8 @@ brew update && brew install phantomjs
 
 メインの関数は`webshot`関数。こちらの関数の引数にWebサイトのURLを渡すと、スクリーンショットを撮影する。標準では画像サイズは920 $\times$ 600となる。引数でファイル名や画像サイズ、画像の切り抜きなどを指定可能。
 
-```{r demo.webshot, eval=FALSE}
-library(webshot)
+```{r demo.webshot, eval = FALSE}
+library("webshot")
 webshot("http://suryu.me", "mysite.png", cliprect = "viewport")
 ```
 
@@ -44,3 +44,16 @@ webshot("http://suryu.me", "mysite.png", cliprect = "viewport")
 * cliprect
 * selector... webサイトが指定しているCSSの一部を撮影する際のオプション
 * delay... 撮影開始時間を秒単位で遅らせる
+
+# Twitterつぶやきの魚拓
+
+**20150203更新**
+
+プレゼンテーションなどでTwitterのつぶやきを参照することがしばしばあるので、`webshot`パッケージを使って簡単に魚拓がとれるようにした。
+
+```{r tweet_gyotaku, eval = FALSE}
+webshot("https://twitter.com/u_ribo/status/561669079430201344", "test150201.png", 
+        selector = ".expansion-container") # select CSS
+```
+
+![](Figure/tweet_gyotaku.png)
