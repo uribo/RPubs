@@ -1,0 +1,111 @@
+---
+title: "Yahoo提供の電力使用状況APIで遊んだら疲れた"
+author: "Shinya Uryu"
+date: "2015年4月4日"
+output: html_document
+---
+
+こんな話がある。[Yahoo提供の電力使用状況APIで遊ぶ - Qiita](http://qiita.com/Gen6/items/1d17d0af1cf7dfb3abbd)
+
+可視化しないとつまらない。というわけでYahoo提供の電力使用状況APIくんとお友達になって遊んでみた。
+
+## まず敵を知ること
+
+[震災関連情報:電力使用状況API - Yahoo!デベロッパーネットワーク](http://developer.yahoo.co.jp/webapi/shinsai/setsuden/v1/latestpowerusage.html)
+
+> 電力の最大供給量と使用量を取得できるAPIです。
+> 現在は北海道電力、東北電力、東京電力、中部電力、関西電力、九州電力管轄内のデータを取得できます。
+> 1時間ごとの電力使用状況の平均値が取得できます。
+
+とのこと。返ってくるフォーマットは次のものがある
+
+* XML（デフォルト）
+* PHPSerialize（知らない子）
+* JSON（今回使用する）
+
+## データを取得するまで
+
+```{r}
+# 使用するパッケージの読み込み
+library("RCurl")
+library("RJSONIO")
+library("DT")
+library("dplyr", warn.conflicts = FALSE)
+library("ggplot2")
+```
+
+
+
+```{r}
+area <- c("hokkaido", "tohoku", "tokyo", "chubu", "kansai", "kyushu")
+```
+
+わざわざ関数にする必要もあるのか、という話だけど、みなさんもこれで遊べるようになる。
+
+```{r}
+y_electoric_power <- function (api.key = NULL) {
+  tmp <- c()
+  area2 <- c()
+  usage2 <- c()
+  capacity2 <- c()
+  
+  for (i in 1:length(area)) {
+    tmp[i] <- getURL(paste("http://setsuden.yahooapis.jp/v1/Setsuden/latestPowerUsage?", "appid=", api.key, "&area=", area[i], "&output=json", sep = "")) %>% fromJSON(nullValue = NA)
+    
+    area2[i] <- tmp[[i]]$Area
+    usage2[i] <- tmp[[i]]$Usage$`$`
+    capacity2[i] <- tmp[[i]]$Capacity$`$`
+    
+    cbind(area2, usage2) %>% cbind(capacity2) ->> res
+  }
+}
+```
+
+Usageフィールドが２つの値をもったいて面倒。なんかもう少しうまく書けそうだけども...。
+
+```{r, echo=FALSE}
+y_electoric_power(api.key = "dj0zaiZpPWV2UGtQMXlkNjhJRSZzPWNvbnN1bWVyc2VjcmV0Jng9YTk-")
+```
+
+```{r, eval=FALSE}
+y_electoric_power(api.key = 取得したAPIキー)
+```
+
+各電力会社の電力使用量、最大供給量を含んだresというデータフレームを生成する。
+
+```{r}
+res
+```
+
+## 整形
+
+```{r}
+res %<>% as.data.frame()
+res$usage2 %<>% as.character() %>% as.numeric() # 数値に直す ref) http://qiita.com/uri/items/19ad62594527a67d6783 のtips1
+res$capacity2 %<>% as.character() %>% as.numeric()
+res %<>% mutate(usage.pct = usage2 / capacity2 * 100) # 使用量 / 供給量の割合
+res$area2 <- area %>% factor(area) # 水準の入れ替え。北にある電力会社の順番に
+```
+
+## 可視化
+
+各電力会社の電気使用率。色は適当につけた（50にするとどれも赤くなってつまらないので平均値より低いか高いかという感じ）。ちなみに平均値は`r mean(res$usage.pct)`
+
+```{r}
+ggplot(res, aes(area2, usage.pct, fill = usage.pct)) + 
+  geom_bar(stat="identity") + 
+  scale_fill_gradient2(low = "skyblue", mid = "snow3", high = "tomato", 
+                       midpoint = mean(res$usage.pct), space = "Lab")
+```
+
+本当は地図の上にプロットしたりもうちょっと電力使用状況APIくんと遊びたかったのだけど、リストの扱いで疲れたので今日は帰ります。電力使用状況APIくん、ばいばい。
+
+## 教訓
+
+* RでのAPI操作は、提供先の仕様によって扱い方が異なるんだなー
+* どっかからとってきたデータは、数値だと思っていても文字列として認識されることも多いんだなー
+* `scale_fill_gradient2`のmidpoint引数はなかなか良いなー
+
+<!-- Begin Yahoo! JAPAN Web Services Attribution Snippet -->
+<span style="margin:15px 15px 15px 15px"><a href="http://developer.yahoo.co.jp/about">Web Services by Yahoo! JAPAN</a></span>
+<!-- End Yahoo! JAPAN Web Services Attribution Snippet -->
