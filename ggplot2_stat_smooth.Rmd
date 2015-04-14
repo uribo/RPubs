@@ -1,0 +1,98 @@
+---
+# Lab.note package ver. 0.5.1
+title: "ggplot2で回帰直線を引く"
+author: "Shinya Uryu"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r using.pkg, echo=TRUE, message=FALSE}
+library("dplyr")
+library("ggplot2")
+library("DT")
+library("broom")
+```
+
+いつもやるのによく忘れるのでメモ。直線回帰であれば簡単。
+
+```{r}
+data("mtcars"); datatable(mtcars)
+```
+
+ひとまず、基礎となる図を作成。
+
+```{r}
+base.plot <- ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point()
+```
+
+ggplot2の`stat_smooth()`の`method`引数で直線回帰を指定。初期設定で95%信頼区間も表示される。この信頼区間を表示させない場合には、引数`se`においてFALSEを指定する。
+
+```{r}
+base.plot + stat_smooth(method = "lm", se = FALSE, colour = "black", size = 1)
+```
+
+`stat_smooth()`の引数は以下のとおり。
+
+* mapping... 審美的属性のマッピング。colour, sizeなどを指定
+* data... 回帰のために使用するデータ。通常は何も指定せず、プロットで使っているデータを使う
+* geom
+* position
+* method... lm, glm, gam, loess, rlmが指定できる。何も指定しない場合、局所多項式回帰 loessが引かれる
+* formula
+* se... 信頼区間を表示させるか否か
+* n
+* fullrange
+* level... 信頼区間の範囲を指定。初期値では0.95（信頼区間95%）
+* na.rm... 欠損値の扱いを指定
+* ...
+
+## 既存のモデルを当てはめる
+
+ある植物の繁殖の有無（0... 開花せず、1... 開花した）をサイズとともに計測した仮想データを使う。
+
+### ロジスティック回帰
+
+```{r}
+data.url <- "https://raw.githubusercontent.com/uribo/mydata/609c8aae9eba4994a0f71e0c4ecd52e2d7e726b7/reproduction.csv"
+df <- readr::read_csv(data.url)
+ne.ac <- filter(df, Abb == "Ne.ac")
+```
+
+```{r}
+base.plot <- ggplot(ne.ac, aes(DBH, Flower)) + geom_point()
+```
+
+先程と同じく、基礎となる図を作っておき（別になくても良いが...）、`stat_smooth`
+
+```{r}
+base.plot + stat_smooth(method = "glm", family = "binomial")
+```
+
+複数の水準（この場合では種）ごとにプロットしたい場合には`facet_grid()`を使うと便利。
+
+```{r}
+ggplot(df, aes(DBH, Flower)) + 
+  geom_point() +
+  stat_smooth(method = "glm", family = "binomial") +
+  facet_grid(. ~ Abb, scales = "free")
+```
+
+### 独自の回帰モデルによる当てはめ
+
+```{r}
+nls(Flower ~ exp(a + (b * log(DBH))) / (1 + exp(a + (b * log(DBH)))), 
+          	          data  = ne.ac,
+          	          start = list(a = -9.909, b = 3.724)) %T>% tidy() -> nls.param
+```
+
+`nls()`で推定したパラメータを用いて当てはめを行うこともできる。注意点として、`geom_smooth()`に与えるformulaは変数名をx, yに変えてやる必要がある、ということ。
+
+```{r}
+base.plot + 
+  stat_smooth(method = "nls", formula = "y ~ exp(a + (b * log(x))) / (1 + exp(a + (b * log(x))))",
+              start = list(a = nls.param$m$getPars()["a"], b = nls.param$m$getPars()["b"]), se = FALSE)
+```
+
+（実は`geom_smooth()`でも同様のことができるのだけど、この関数の違いがよくわかっていません。）
+
+Stay gold...
