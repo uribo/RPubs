@@ -1,0 +1,86 @@
+---
+# Lab.note package ver. 0.5.1
+title: "Why we would give the 'NA' to colum names?"
+author: "Shinya Uryu"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r using.pkg, echo=TRUE, message=FALSE}
+library("tidyr")
+library("dplyr")
+library("pipeR")
+```
+
+とあるホクソエムさんが悩んでおりました。
+
+[tidyrでダミー変数を作成する（赤ペン先生希望） - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20150415/1429092684)
+
+少ない脳みそを使ってちょっと考えてみました。
+
+> 150416追記。selectの前にdata.frame()をかますか、selectの際に`select(-`NA`)`のようにシングルクオートでNAを囲う方法を教えていただいた。
+
+```{r}
+df <- data.frame(id = 1:10, 
+                 feature = c(1, NaN, 2, 2, 2, NaN, NaN, 3, 3, 1))
+df
+```
+
+元ブログで`NA （欠損値）`を与えているところを`NaN （非数）`にします。その理由は下で書きます（**犯人はヤス**）。あとの処理はおんなじ。selectのところだけ`NaN`に変更。
+
+```{r}
+df %>>% spread(key   = feature, 
+              value  = feature,
+              fill   = 0) %>>% 
+  select(-contains("NaN")) %>>% 
+  mutate_each(funs(ifelse(. >= 1, 1, 0)), -id)
+```
+
+## こうさつ
+
+要点を先に。何気なく頻繁に使う`NA`。こいつの挙動には気をつけたほうが良さ気。teramonagiさんはダミーデータの作成時に欠損値を意味する`NA`を使っていたのですが、これをそのまま`spread`にかけてしまったところが罠だったようです。
+
+```{r}
+df <- data.frame(id = 1:10, 
+                 feature = c(1, NaN, 2, 2, 2, NaN, NaN, 3, 3, 1))
+df$feature
+
+df.na <- data.frame(id = 1:10, 
+                 feature = c(1, NA, 2, 2, 2, NA, NA, 3, 3, 1))
+df.na$feature
+```
+
+この段階では何も問題がなさそう。
+
+ところがどっこい、`spread`でdf$featureの値を列名に置き換えるという処理を行うさい、`NA`の存在が思わぬ障害を招いていました。
+
+```{r}
+df.na %>>% spread(key   = feature, 
+              value  = feature,
+              fill   = 0) %>>% 
+  select(-contains("NA"))
+```
+
+どうしてこのようなことになるのでしょうか。
+
+`spread`した時点での列名は`id`, `1`, `2`, `3`, `NA`の５列からなっているはずですが...
+
+```{r}
+df.na %>>% spread(key   = feature, 
+              value  = feature,
+              fill   = 0) %>>%  colnames()
+```
+
+`NA`の部分は認識されていない（？）みたいです。これが元で返り値がエラーになったのだと思われます。
+
+というわけで、欠損値ではなく、とりあえず**なんらかしらが存在するよ、という意味でNaN**を使って対処しました。
+
+```{r}
+df %>>% spread(key   = feature, 
+              value  = feature,
+              fill   = 0) %>>%  colnames()
+```
+
+`NaN`であれば列名として認識してくれるみたいです。
+
+理由は説明できません。他の（R言語の構造に詳しい）方が解説してくれることを願います。現場からは以上です。
