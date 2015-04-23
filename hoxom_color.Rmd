@@ -1,0 +1,166 @@
+---
+# Lab.note package ver. 0.5.2-2
+title: "ホクソエムカラー"
+author: "Shinya Uryu"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r using.pkg, echo = TRUE, message = FALSE}
+library(dplyr)
+library(rvest)
+library(rPlotter) # https://github.com/woobe/rPlotter
+# library(pforeach) # https://github.com/hoxo-m/pforeach
+library(gridExtra)
+theme_set(theme_bw(base_size = 6, base_family = "Helvetica"))
+```
+
+匿名知的集団「ホクソエム」の誕生起源とされる日から[１ヶ月が経ったようです](https://twitter.com/weda_654/status/589989793100013569)。そこで１ヶ月記念として、更に「ホクソエム」を世に売り出していくため、ホクソエムのイメージカラーを検討してみました。
+
+画像ファイルで使用されている色からRで利用できるパレットを作成する`rPlotter`を使い、ホクソエムを代表するイメージカラーを決めます。対象とするのはホクソエムメンバーのTwitterアイコンとしました。
+
+# 準備
+
+[こちら](https://twitter.com/teramonagi/lists/list/members)で現在ホクソエムに含まれているメンバーを確認することができます。今回の対象はこちらのリストに登録されているホクソエム16名となります。
+
+まずはTwitter IDを`rvest`によって取得し、つぎに各メンバーのアイコン画像をダウンロードしてきます。
+
+```{r get_screen_name}
+screen.name <- html("https://twitter.com/teramonagi/lists/list/members") %>% 
+  html_nodes(css = ".username") %>% 
+  html_text() %>% 
+  unique() %>% 
+  grep(pattern = "^[[:punct:]][[:graph:]]", value = TRUE) %>% 
+  substr(2, 100)
+screen.name
+```
+
+きちんと16名のIDが取得できているので、それぞれのアイコンをとってきます。なおアイコンは2015年4月22日21:34現在のものです。
+
+```{r, eval=FALSE}
+for(i in 1:length(screen.name)){
+  html(paste("https://twitter.com/", screen.name[i], sep = "")) %>% 
+  html_nodes(css = ".ProfileAvatar-image") %>% 
+  html_attr("src") %>% 
+  download.file(destfile = paste("img_hxm/", screen.name[i], "_", basename(.), sep = ""), method = "curl")
+}
+# 親分へ。これをpfroeachでやるにはどうすればよいでしょうか... 
+## 失敗例
+# pforeach(i in 1:length(screen.name))({
+#   html(paste("https://twitter.com/", screen.name[i], sep = "")) %>% 
+#   html_nodes(css = ".ProfileAvatar-image") %>% 
+#   html_attr("src") %>% 
+#   download.file(destfile = paste("img_hxm/", basename(.), sep = ""), method = "curl")
+# })
+```
+
+ファイル名が大きいとRが落ちてしまうので、適宜リサイズ。（Rでできなかった...）
+
+# 画像内で多く使われている色の判別
+
+それぞれのアイコンで使われているカラーコードを抽出します。
+
+```{r, eval=FALSE, echo=FALSE}
+## CRAN Packages
+# install.packages(c("ggplot2", "stringr", "reshape2", "dichromat"))
+
+## EBImage
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("EBImage")
+
+## Packages on GitHub
+# install_github("ramnathv/rblocks")
+
+## And finally ...
+# install_github("woobe/rPlotter")
+```
+
+```{r}
+prof.file <- list.files(path = "img_hxm")
+pal <- extract_colours(url_img = paste("img_hxm/", prof.file[15], sep = ""))
+pal
+```
+
+14番目のホクソエムであるID `u_ribo`（自分）のアイコンで使用されているカラーコードが取得できました。
+
+グラフにしてみます。
+
+```{r}
+data.frame(name = rep(screen.name[15], each = 5), value = rep(20, 5), pal) %>% 
+ggplot(., aes(x ="", y = value, fill = pal)) + 
+  geom_bar(stat = "identity") + coord_polar("y") +
+  scale_fill_manual(values = pal) + 
+  guides(fill = FALSE)
+```
+
+もとの画像はこんな感じです。
+
+![](https://pbs.twimg.com/profile_images/579982335199748096/EyWXL6HV_400x400.jpg)
+
+この調子でほかのホクソエムもどうぞ。
+
+```{r, echo=FALSE, fig.width=10}
+pal.list <- list()
+hxm <- function (i = NULL) {
+  pal <- extract_colours(url_img = paste("img_hxm/", prof.file[i], sep = ""))
+  pal.list[[i]] <<- pal
+  data.frame(name = rep(screen.name[i], each = 5), value = rep(20, 5), pal) %>% 
+ggplot(., aes(x ="", y = value, fill = pal)) + 
+  geom_bar(stat = "identity") + coord_polar("y") +
+  scale_fill_manual(values = pal) + 
+  guides(fill = FALSE) +
+   theme(
+    legend.position = "none",
+    axis.title = element_blank(), 
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank())
+}
+
+hxm(1) -> p1
+hxm(2) -> p2
+hxm(3) -> p3
+hxm(4) -> p4
+hxm(5) -> p5
+hxm(6) -> p6
+hxm(7) -> p7
+hxm(8) -> p8
+hxm(9) -> p9
+hxm(10) -> p10
+hxm(11) -> p11
+hxm(12) -> p12
+hxm(13) -> p13
+hxm(14) -> p14
+hxm(15) -> p15
+hxm(16) -> p16
+
+grid.arrange(p1, p2, p3, p4, 
+             p5, p6, p7, p8,
+             p9, p10, p11, p12, p13,
+             p14, p15, p16, ncol = 4)
+```
+
+**どれが誰のアイコンかわかったら真のホクソエムになれる日も近いでしょう。**
+
+# まとめ
+
+本題のホクソエムテーマカラーですが、それぞれのカラーコードをまとめて、頻度を確認するとつぎのようになりました（たぶんあってるはず）。
+
+```{r, echo=FALSE}
+c(pal.list[[1]], pal.list[[2]], pal.list[[3]], pal.list[[4]],
+  pal.list[[5]], pal.list[[6]], pal.list[[7]], pal.list[[8]],
+  pal.list[[9]], pal.list[[10]], pal.list[[11]], pal.list[[12]],
+  pal.list[[13]], pal.list[[14]], pal.list[[15]], pal.list[[16]]) %>% data.frame() %>% table()
+```
+
+... **ホクソエムは個性あふれるカラフルな集団です**。
+
+`rPlotter`、色の割合とか出してくれるとありがたい。
+
+# 参考
+
+* [Blend it like a Bayesian!: Towards (Yet) Another R Colour Palette Generator. Step One: Quentin Tarantino.](http://blenditbayes.blogspot.co.uk/2014/05/towards-yet-another-r-colour-palette.html)
+* [woobe/rPlotter](https://github.com/woobe/rPlotter)
+
+Stay gold...
