@@ -1,0 +1,35 @@
+---
+title: "precure_demonstration"
+author: "Shinya Uryu"
+date: "2015年5月16日"
+output: html_document
+---
+
+「ふたりはプリキュア」から「Go!プリンセスプリキュア」までの歴代プリキュアのコスチュームカラー。ご査収ください。
+
+https://github.com/uribo/precure
+
+最終的にはこれ（[karthik/wesanderson](https://github.com/karthik/wesanderson)）を目指す（というか~~パクる~~オマージュしたものを作る）
+
+```{r}
+# devtools::install_github("uribo/precure")
+library(precure)
+library(ggplot2)
+library(pforeach)
+library(rPlotter)
+```
+
+```{r, fig.width = 10, fig.height = 16, results = 'hide'}
+par(mfrow = c(6, 2))
+npforeach(i = precure_pal, .combine = rbind)({
+  display_colours(i)
+})
+```
+
+```{r}
+iris %$% ggplot(., aes(Sepal.Length, Sepal.Width, color = Species)) + 
+  geom_point() + 
+  scale_color_manual(values = precure_pal[[12]]) +
+  theme_bw()
+```
+

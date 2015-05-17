@@ -1,0 +1,105 @@
+---
+# THEME: RPubs by lab.note ver. 0.6.3
+title: "Japan.R補完計画 第二次中間報告: ブログURLからタイトルとRSSを取得"
+author: "Shinya Uryu"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r [SETTING], echo = TRUE, message = FALSE}
+library(RCurl)
+library(dplyr)
+library(rvest)
+library(pforeach)
+library(XML)
+```
+
+日本のRユーザーが発信するRの情報を集めたい。こつこつと資料へのリンクを追加しているが、それだけでは日本Rユーザーの補完ができるわけではない。というわけで次のターゲットとしてブログを選んだ。ブログは多くのRユーザーの情報源になっている。そのリンクを集めて、RSSをごにょごにょできないかと模索している。ひとまず今回はブログ名とRSSを取得するまで。
+
+## ブログURLをまとめる（手動）
+
+どこかにまとまってあるのかもしれないけど、探すのもアレだったので自分のFeedlyに登録されている・ぱっと思いついたブログのURLを収集してCSVファイルを作った。ファイルはGitHubに[ある](https://github.com/uribo/Japan.useR/blob/master/inst/assets/raw_data/JapanRBlog.csv)ので、「うちのブログがないやんけ！」という場合にはぜひ追加修正していただきたい。
+
+```{r}
+df <- getURL("https://raw.githubusercontent.com/uribo/Japan.useR/master/inst/assets/raw_data/JapanRBlog.csv") %>% 
+  read.csv(text = ., header = TRUE)
+```
+
+ひとまず`r nrow(df)`件分ある。
+
+## RSSを取得する
+
+RSSへのリンクはhtmlの`<head><link> ... </link></head>`にあることが多いので、そこからRSSっぽいものを取得するだけ。このへんの処理もまた赤ペン先生の手直しが入るかもしれない...。
+
+```{r}
+npforeach(id = df$url)({
+  id %>% paste(.) %>% html() %>% html_nodes(., "head link") %>% {
+    res0 <<- .
+    res <<- html_attr(., "type")
+    res2 <<- res %>% grep("rss", x = ., value = FALSE)
+  }
+  res0[res2[1]] %>% html_attr("href")
+}) -> df$rss
+df$rss[1:2]
+```
+
+こんな感じで`df`の`rss`列にRSSへのリンクを格納した。
+
+### ブログ名をとってくる
+
+せっかくRSSのリンクを取得したので、その情報からブログ名もとってくる。なお、１件だけRSSフィードの取得に失敗したのでそちらも手動で対処。
+
+```{r}
+df2 <- df[1:44, ] %>% na.omit() %>% droplevels() # エラーになる項目をとりのぞいたデータフレームを一時的に使用
+npforeach(id = df2$rss)({
+  xmlParse(id) %>% xmlToList() %$% channel$title
+}) -> df2$title
+```
+
+### 取得できなかったブログ
+
+```{r}
+df %<>% left_join(., df2)
+df$rss %>% is.na() %>% which()
+```
+
+```{r, eval = FALSE}
+df$url[3] # http://blog.gepuro.net; げぷろくん
+df$url[5] # http://blog.kz-md.net; ぞうさん
+```
+
+上記のサイトは`<head>`にRSSへのリンクを貼っていないみたいなので手動でとってくる。ぞうさんのところはRSSそのものがないっぽい（リンク切れ？？）ので諦めた。
+
+```{r}
+df$rss[3] <- c("http://blog.gepuro.net/recent.atom")
+```
+
+```{r, eval=FALSE}
+xmlParse(df$rss[45]) %>% xmlToList() %$% channel$title
+# Error: XML content does not seem to be XML: 'https://kohske.wordpress.com/feed/'
+```
+
+```{r}
+df$title[45] <- c("Hi!!")
+```
+
+```{r}
+df$title[3] <- c("gepulog")
+df$title[5] <- c("日々是独想 - 日々の徒然なることを独り想う。")
+```
+
+## CSVファイルとして保存
+
+ブログタイトル、URL、RSSを含んだCSVファイルを作成する。RSSがあるので、そこからfeedをとってくることもできるけど、それはまた今度の宿題ということで。
+
+```{r}
+df %<>% dplyr::select(title, url, rss)
+```
+
+```{r}
+kable(df, format = "html")
+```
+
+----
+　
+作成したCSVファイルはまたGitHubに[あげておく](https://github.com/uribo/Japan.useR/blob/master/inst/assets/raw_data/JapanRBlogRSS.csv)。このようにすればURLだけでタイトルとRSSが得られるので少しは情報収集の時間が減らせるかもしれない。
