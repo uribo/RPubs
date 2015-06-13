@@ -1,0 +1,65 @@
+---
+# THEME: RPubs by lab.note ver. 0.8.0
+title: "TopoJSON map of Japan "
+author: "Shinya Uryu"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    theme: readable
+---
+
+```{r [SETTING], echo = TRUE, message = FALSE}
+library(sp)
+library(geojsonio)
+library(ggplot2)
+```
+
+良い子のみんなは、[`{geojsonio}`](https://github.com/ropensci/geojsonio)パッケージで**GeoJSON**ファイルや**TopoJSON**ファイルが読み込めるのを知っているよね。{geojsonio}は信頼と実績のropensciが作っているパッケージだ！GitHubのページや開発者の一人であるScott Chamberlainさんのブログ記事（[その１](http://recology.info/2015/04/geojson-io/), [その２](http://recology.info/2015/01/geojson-topojson-io/)）に使い方の例があるが、そこに載っているのは[アメリカの地図を描画する](https://github.com/ropensci/geojsonio#topojson)という話だ。遠いアメリカに思いを馳せるよりも、住んでいる日本の地図を表示させたい...。ファイルがあれば簡単に地図を描画できそうだということで日本地図のTopoJSONファイルを探してみた。
+
+（さわり程度に）探してみたのだけど、国土地理院とか有名なところでも対象ファイルは提供していなかったりする。そんな背景もあってか、利用者の皆さんは各自でファイルを作成されているみたい。ひとまずの例としてTetsuya Yoshida
+さん作成の[JapanCityGeoJson](https://github.com/niiyz/)を紹介する。ファイルの作成方法はQiitaに書かれているので参考にどうぞ（[国土交通省のシェイプ形式データから全都道府県市町村郡区のGeoJsonとTopoJsonを作成。 - Qiita](http://qiita.com/niiyz/items/4e98766172340a7ee929)
+）。
+
+やることはScottのブログ記事と変わらない。GitHub上にあるtopojsonファイルを{geojsonio}を使って読み込み、描画させるというもの。ただ、マルチバイトのフォルダ内にあるファイルだと読み込みに失敗するのでご注意。
+
+```{r}
+url <- "https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/toyama.topojson"
+toyamap <- topojson_read(url)
+```
+
+```{r, eval=FALSE}
+plot(toyamap)
+```
+
+ggplot2を使って描画させる場合は`fortify()`関数を噛ませて、`geom_map()`を重ねる必要がある。
+
+```{r}
+toyamap %<>% fortify(.)
+```
+
+```{r, eval=FALSE}
+ggplot(data = toyamap, 
+       aes(map_id = id, x = long, y = lat)) + 
+  geom_map(map = toyamap, color = "black", fill = "white")
+```
+
+結果は省略。富山県の地図が描けた。
+
+最後にコロプレス図（ある属性で地図を塗り分ける、みたいなことをしたい場合）の作成方法をメモ。
+
+```{r}
+str(toyamap)
+```
+
+`toyama.topojson`には上記の情報が含まれており、groupというのはおそらく市区町村とかの行政区を意味しているのだろうから、今回は単純にその値を元に地図を塗り分けてみる。
+
+```{r, eval=FALSE}
+ggplot(data = toyamap, 
+       aes(map_id = id, x = long, y = lat)) + 
+  geom_map(map = toyamap, color = "black", fill = "white") +
+  geom_map(data = toyamap, map = toyamap,
+           aes(fill = group, map_id = id)) +
+  guides(fill = FALSE)
+```
+
+大事なことはキャプテンアメリカが[教えてくれた](http://rud.is/b/2015/05/14/geojson-hexagonal-statebins-in-r/)。感謝の気持ちを込めて、6月26日は[金曜ロードショーのアベンジャーズ](http://www.ntv.co.jp/program/detail/21841194.html)を観ます。
